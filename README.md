@@ -1,2 +1,2 @@
 # tempoServer
-Server for the Temp self-hosted music streaming server.
+Server for the Tempo self-hosted music streaming server.
