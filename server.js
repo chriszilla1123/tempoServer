@@ -14,7 +14,7 @@ const port = 8000;
 tempoServer.use(bodyParser.urlencoded({extended: true}));
 var baseDir = "/home/chris/Storage/Music/";
 var fileTypes = [".mp3", ".m4a", ".flac"];
-shouldInitDatabase = true;
+shouldInitDatabase = false;
 
 //Database connection object
 var db = mysql.createConnection({

@@ -6,6 +6,17 @@ module.exports = function(tempoServer, db, baseDir) {
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type,           Accept");
       next();
 });  
+    //Global Values
+    function setTypeHeader(fileType){
+        header_mp3 = "audio/mpeg";
+        header_m4a = "audio/mpeg";
+        header_flac = "audio/flac";
+
+        if(fileType === ".mp3") return header_mp3;
+        if(fileType === ".m4a") return header_m4a;
+        if(fileType === ".flac") return header_flac;
+    }
+
     //Song endpoints
     tempoServer.get('/getArtists', (req, res) => {
         dbQuery = "SELECT *  FROM artists"
@@ -59,7 +70,8 @@ module.exports = function(tempoServer, db, baseDir) {
     });
     
     tempoServer.get('/getRandomSong', (req, res) => {
-        dbQuery = "SELECT * FROM songs";
+        dbQuery = 'SELECT * FROM songs';
+        dbArtistQuery = 'SELECT artist FROM artists WHERE id='
         db.query(dbQuery, function(err, result) {
             if(err){
                 res.send(err);
@@ -67,11 +79,21 @@ module.exports = function(tempoServer, db, baseDir) {
             else{
                 length = result.length;
                 songIndex = Math.floor(Math.random() * Math.floor(length));
-                console.log("Choosing song: \"" + result[songIndex].title
-                    + "\" by " + result[songIndex].artist);
-                song = baseDir + result[songIndex].directory;
-                songStream = fs.createReadStream(song);
-                songStream.pipe(res);
+                dbArtistQuery += result[songIndex].artist;
+                db.query(dbArtistQuery, function(err, aResult) {
+                    if(err){
+                        res.send(err);
+                    }
+                    else{
+                        console.log("Choosing song: \"" + result[songIndex].title
+                            + "\" by " + aResult[0].artist);
+                        song = baseDir + result[songIndex].directory;
+                        fileType = result[songIndex].fileType;
+                        res.header("Content-Type", setTypeHeader(fileType));
+                        songStream = fs.createReadStream(song);
+                        songStream.pipe(res);
+                    }
+                });
             }
         });
     });
