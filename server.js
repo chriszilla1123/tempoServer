@@ -46,7 +46,7 @@ function initDatabase(db) {
         + "PRIMARY KEY (ID), artist VARCHAR(255), numSongs int, "
         + "numAlbums int, picture VARCHAR(255))";
     albumQuery = "CREATE TABLE albums (id int AUTO_INCREMENT, "
-        + "PRIMARY KEY (ID), album VARCHAR(255), numSongs int, "
+        + "PRIMARY KEY (ID), artist int, album VARCHAR(255), numSongs int, "
         + "albumArt VARCHAR(255))";
     songQuery = "CREATE TABLE songs (artist int, album int, "
         + "title VARCHAR(255), fileType VARCHAR(255), directory VARCHAR(255), "
@@ -125,7 +125,7 @@ function initDatabase(db) {
         albumRecords = [];
         songRecords = [];
         artistQuery = "INSERT INTO artists (artist, numSongs, numAlbums, picture) VALUES ?";
-        albumQuery = "INSERT INTO albums (album, numSongs, albumArt) VALUES ?";
+        albumQuery = "INSERT INTO albums (artist, album, numSongs, albumArt) VALUES ?";
         songQuery = "INSERT INTO songs (artist, album, title, fileType, directory) VALUES ?";
         
         fs.readdirSync(baseDir).forEach(artist => {
@@ -138,20 +138,23 @@ function initDatabase(db) {
                 fs.readdirSync(artistDir).forEach(album => {
                     if(fs.statSync(artistDir + album).isDirectory()){
                         albumDir = artistDir + album + '/';
-                        albums.push(album);
+                        artistNumber = artists.indexOf(artist) + 1;
                         if(albumIsRecorded(album) === false){
-                            albumRecords.push([album, 0, ""]);
+                            albums.push(album);
+                            albumRecords.push([artistNumber, album, 0, ""]);
+                            artistRecords[artistNumber - 1][2] += 1;
                         }
                         fs.readdirSync(albumDir).forEach(title => {
                             if(fs.statSync(albumDir + title).isDirectory() == false){
                                 relDir = artist + '/' + album + '/' + title;
+                                albumNumber = albums.indexOf(album) + 1;
                                 fileTypes.forEach(type => {
                                     if(title.indexOf(type) !== -1){
                                         title = title.split(type)[0];
                                         title = prettyTitle(title);
-                                        artistNumber = artists.indexOf(artist) + 1;
-                                        albumNumber = albums.indexOf(album) + 1;
                                         songRecords.push([artistNumber, albumNumber, title, type, relDir]);
+                                        artistRecords[artistNumber - 1][1] += 1;
+                                        //albumRecords[albumNumber - 1][2] += 1; //TODO
                                     }
                                 });
                             }
@@ -166,7 +169,6 @@ function initDatabase(db) {
                 //console.log("Not a directory! (1)");
             }
         });
-        console.log(artists);
         db.query(artistQuery, [artistRecords], function(err, result){
             if(err) throw err;
             console.log("Inserted " + result.affectedRows + " artists into library");

@@ -54,6 +54,19 @@ module.exports = function(tempoServer, db, baseDir) {
         });
     });
     
+    tempoServer.get('/getAlbumsByArtist/:id', (req, res) => {
+        const id = req.params.id;
+        dbQuery = "SELECT * FROM albums WHERE artist = " + db.escape(id);
+        db.query(dbQuery, function(err, result) {
+            if(err){
+                res.send(err);
+            }
+            else{
+                res.send(result);
+            }
+        });
+    });
+
     tempoServer.get('/getSongByID/:id', (req, res) => {
         const id = req.params.id;
         dbQuery = "SELECT * FROM songs WHERE id = " + db.escape(id);
@@ -63,6 +76,8 @@ module.exports = function(tempoServer, db, baseDir) {
             }
             else{
                 song = baseDir + result[0].directory;
+                fileType = result[0].fileType;
+                res.header("Content-Type", setTypeHeader(fileType));
                 songStream = fs.createReadStream(song);
                 songStream.pipe(res);
             }
