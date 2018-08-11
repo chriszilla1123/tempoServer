@@ -1,11 +1,14 @@
 var fs = require('fs');
+var cors = require('cors');
 
 module.exports = function(tempoServer, db, baseDir) {
-    tempoServer.use(function(req, res, next) {
+    /*tempoServer.use(function(req, res, next) {
       res.header("Access-Control-Allow-Origin", "*");
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type,           Accept");
       next();
-});  
+    });*/
+    tempoServer.use(cors());
+    
     //Global Values
     function setTypeHeader(fileType){
         header_mp3 = "audio/mpeg";
@@ -63,6 +66,19 @@ module.exports = function(tempoServer, db, baseDir) {
             }
             else{
                 res.send(result);
+            }
+        });
+    });
+
+    tempoServer.get('/getArtistByAlbum/:id', (req, res) => {
+        const id = req.params.id;
+        dbQuery = "SELECT * FROM albums WHERE id = " + db.escape(id);
+        db.query(dbQuery, function(err, result) {
+            if(err){
+                res.send(err);
+            }
+            else{
+                res.send(result[0].artist.toString());
             }
         });
     });
