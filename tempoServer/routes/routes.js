@@ -91,11 +91,20 @@ module.exports = function(tempoServer, db, baseDir) {
                 res.send(err);
             }
             else{
-                song = baseDir + result[0].directory;
-                fileType = result[0].fileType;
-                res.header("Content-Type", setTypeHeader(fileType));
-                songStream = fs.createReadStream(song);
-                songStream.pipe(res);
+                if(result.length == 0){
+                    console.log("Error: No results found for '" + id + "'");
+                    return;
+                }
+                if(result[0].hasOwnProperty('directory')){
+                    song = baseDir + result[0].directory;
+                    fileType = result[0].fileType;
+                    res.header("Content-Type", setTypeHeader(fileType));
+                    songStream = fs.createReadStream(song);
+                    songStream.pipe(res);
+                }
+                else{
+                    console.log("Error: 'directory' not found for " + id);
+                }
             }
         });
     });

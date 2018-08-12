@@ -139,15 +139,16 @@ function initDatabase(db) {
                     if(fs.statSync(artistDir + album).isDirectory()){
                         albumDir = artistDir + album + '/';
                         artistNumber = artists.indexOf(artist) + 1;
-                        if(albumIsRecorded(album) === false){
-                            albums.push(album);
+                        if(albumIsRecorded(artist, album) === false){
+                            var tup = Object.freeze([artist, album]);
+                            albums.push(tup);
                             albumRecords.push([artistNumber, album, 0, ""]);
                             artistRecords[artistNumber - 1][2] += 1;
                         }
                         fs.readdirSync(albumDir).forEach(title => {
                             if(fs.statSync(albumDir + title).isDirectory() == false){
                                 relDir = artist + '/' + album + '/' + title;
-                                albumNumber = albums.indexOf(album) + 1;
+                                albumNumber = (albums.indexOf(tup) + 1);
                                 fileTypes.forEach(type => {
                                     if(title.indexOf(type) !== -1){
                                         title = title.split(type)[0];
@@ -187,9 +188,9 @@ function initDatabase(db) {
             };
             return false;
         };
-        function albumIsRecorded(album){
+        function albumIsRecorded(artist, album){
             for(var i=0; i < albumRecords.length; i++){
-                if(albumRecords[i][0] == album) return true;
+                if(albumRecords[i][1] == album && albumRecords[i][0] == artist) return true;
             };
             return false;
         };
