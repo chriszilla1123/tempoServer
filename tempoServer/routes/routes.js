@@ -78,6 +78,10 @@ module.exports = function(tempoServer, db, baseDir) {
                 res.send(err);
             }
             else{
+                if(result.length == 0){
+                    console.log("Error: No results found for: '" + id + "'")
+                    return;
+                }
                 res.send(result[0].artist.toString());
             }
         });
