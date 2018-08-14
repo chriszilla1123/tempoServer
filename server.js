@@ -14,7 +14,7 @@ const port = 8000;
 tempoServer.use(bodyParser.urlencoded({extended: true}));
 var baseDir = "/home/chris/Storage/Music/";
 var fileTypes = [".mp3", ".m4a", ".flac"];
-shouldInitDatabase = false;
+shouldInitDatabase = true;
 
 //Database connection object
 var db = mysql.createConnection({
@@ -155,7 +155,7 @@ function initDatabase(db) {
                                         title = prettyTitle(title);
                                         songRecords.push([artistNumber, albumNumber, title, type, relDir]);
                                         artistRecords[artistNumber - 1][1] += 1;
-                                        //albumRecords[albumNumber - 1][2] += 1; //TODO
+                                        albumRecords[albumNumber - 1][2] += 1; //TODO
                                     }
                                 });
                             }
