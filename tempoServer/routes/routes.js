@@ -1,5 +1,6 @@
 var fs = require('fs');
 var cors = require('cors');
+var bodyParser = require('body-parser');
 
 module.exports = function(tempoServer, db, baseDir) {
     /*tempoServer.use(function(req, res, next) {
@@ -8,6 +9,7 @@ module.exports = function(tempoServer, db, baseDir) {
       next();
     });*/
     tempoServer.use(cors());
+    tempoServer.use(bodyParser.json());
     
     //Global Values
     function setTypeHeader(fileType){
@@ -170,5 +172,48 @@ module.exports = function(tempoServer, db, baseDir) {
                 songStream.pipe(res);
             }
         });
+    });
+
+    tempoServer.post('/search', (req, res) => {
+        json = req.body;
+
+        artistResults = [];
+        albumResults = [];
+        songResults = [];
+        searchResults = [];
+        if(json.hasOwnProperty('all')){
+            dbQuery = "SELECT * FROM artists WHERE artist LIKE"
+                + db.escape("%" + json.all + "%");;
+            db.query(dbQuery, function(err, result){
+                if(err) res.send(err)
+                else{
+                    artistResults.push(result);
+                    dbQuery = "SELECT * FROM albums WHERE album LIKE"
+                        + db.escape("%" + json.all + "%");;
+                    db.query(dbQuery, function(err, result){
+                        if(err) res.send(err)
+                        else{
+                            albumResults.push(result);
+                            dbQuery = "SELECT * FROM songs WHERE title LIKE"
+                                + db.escape("%" + json.all + "%");;
+                            db.query(dbQuery, function(err, result){
+                                if(err) res.send(err)
+                                else{
+                                    songResults.push(result);
+                                    searchResults.push(artistResults);
+                                    searchResults.push(albumResults);
+                                    searchResults.push(songResults);
+                                    res.send(searchResults);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        else{
+            console.log('err');
+            res.send(req.body);
+        }
     });
 }
