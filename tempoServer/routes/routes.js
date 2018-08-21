@@ -216,4 +216,20 @@ module.exports = function(tempoServer, db, baseDir) {
             res.send(req.body);
         }
     });
+
+    tempoServer.put('/updateArtistInfo/:id', (req, res) => {
+        const artist = req.params.id;
+        var json = req.body;
+        if(json.hasOwnProperty('artist')){
+            dbQuery = 'UPDATE artists SET artist=' + db.escape(json.artist)
+            + 'WHERE id=' + db.escape(artist);
+            db.query(dbQuery, function(err, result){
+                if(err) res.send(err);
+                else{
+                    console.log('Updated artist #' + artist + ' to name ' + json.artist);
+                    res.send(result);
+                }
+            });
+        }
+    });
 }
