@@ -1,6 +1,7 @@
 var fs = require('fs');
 var cors = require('cors');
 var bodyParser = require('body-parser');
+const {spawn} = require('child_process');
 
 module.exports = function(tempoServer, db, baseDir) {
     /*tempoServer.use(function(req, res, next) {
@@ -20,6 +21,31 @@ module.exports = function(tempoServer, db, baseDir) {
         if(fileType === ".mp3") return header_mp3;
         if(fileType === ".m4a") return header_m4a;
         if(fileType === ".flac") return header_flac;
+    }
+    function compressSong(songId, songDir, songType, res){
+        //Compresses a song, and returns a string of the new directory
+        largeSong = baseDir + songDir
+        min_folder = baseDir + "/tempo_minified"
+        minSong = min_folder + "/" + songId + "." + songType
+
+        if(!fs.existsSync(min_folder)){
+            fs.mkdirSync(min_folder)
+        }
+        if(fs.existsSync(minSong)){
+            res.header("Content-Type", setTypeHeader(".m4a"));
+            songStream = fs.createReadStream(minSong);
+            songStream.pipe(res);
+        }
+        else{
+            bitrate = '96K'
+            convert = spawn('ffmpeg', ['-i', largeSong, '-b:a', bitrate, minSong])
+            convert.on('close', respCode => {
+                res.header("Content-Type", setTypeHeader(songType));
+                songStream = fs.createReadStream(minSong);
+                songStream.pipe(res);
+            })
+        }
+        
     }
 
     //Song endpoints
@@ -110,6 +136,28 @@ module.exports = function(tempoServer, db, baseDir) {
                 }
                 else{
                     console.log("Error: 'directory' not found for " + id);
+                }
+            }
+        });
+    });
+
+    tempoServer.get('/getLowSongByID/:id', (req, res) => {
+        const id = req.params.id;
+        dbQuery = "SELECT * FROM songs WHERE ID= " + db.escape(id);
+        db.query(dbQuery, function(err, result) {
+            if(err){
+                res.send(err);
+            }
+            else{
+                if(result.length == 0){
+                    console.log("Error: No results found for '" + id + "'");
+                    return;
+                }
+                if(result[0].hasOwnProperty('directory')){
+                    //song = baseDir + result[0].directory;
+                    fileType = result[0].fileType;
+                    compressSong(id, result[0].directory, fileType, res);
+                    
                 }
             }
         });
