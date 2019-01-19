@@ -1,6 +1,7 @@
 var fs = require('fs');
 var cors = require('cors');
 var bodyParser = require('body-parser');
+const libraryScanner = require('../libraryScanner.js')
 const {spawn} = require('child_process');
 
 module.exports = function(tempoServer, db, baseDir) {
@@ -26,7 +27,7 @@ module.exports = function(tempoServer, db, baseDir) {
         //Compresses a song, and returns a string of the new directory
         largeSong = baseDir + songDir
         min_folder = baseDir + "/tempo_minified"
-        minSong = min_folder + "/" + songId + "." + songType
+        minSong = min_folder + "/" + songId + ".mp3"
 
         if(!fs.existsSync(min_folder)){
             fs.mkdirSync(min_folder)
@@ -279,5 +280,16 @@ module.exports = function(tempoServer, db, baseDir) {
                 }
             });
         }
+    });
+
+    //Administrative endpoints
+    tempoServer.get('/rescanLibrary', (req, res) => {
+        console.log("Received Library Rescan Request");
+        libraryScanner.initDatabase(db, onSuccess);
+
+        function onSuccess(){
+            console.log("Library rescan successful");
+            res.send("true");
+        };
     });
 }
