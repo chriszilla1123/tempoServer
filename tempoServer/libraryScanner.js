@@ -1,7 +1,8 @@
 const fs = require('fs');
 
 var baseDir = "/home/chris/Storage/Music/";
-var fileTypes = [".mp3", ".m4a", ".flac"];
+var audioFileTypes = [".mp3", ".m4a", ".flac"];
+var artFileTypes = [".jpg", ".jpeg", ".png"]
 var artistExceptions = ["tempo_minified"]
 var albumExceptions = []
 var songExceptions = []
@@ -23,18 +24,18 @@ exports.initDatabase = function initDatabase(db, callback) {
             dropTableQuery = "DROP TABLE artists";
             db.query(dropTableQuery, function(err, result){
                 if(err) console.log(err);
-                else console.log("Table deleted");
+                //else console.log("Table deleted");
                 db.query(artistQuery, function(err, result){
                     if(err) throw err;
                     else {
-                        console.log("Artist table created successfully");
+                        //console.log("Artist table created successfully");
                         createAlbumTable()
                     }
                 });
             });
         }
         else {
-            console.log("Artist table created successfully");
+            //console.log("Artist table created successfully");
             createAlbumTable();
         }
     });
@@ -44,18 +45,18 @@ exports.initDatabase = function initDatabase(db, callback) {
                 dropTableQuery = "DROP TABLE albums";
                 db.query(dropTableQuery, function(err, result){
                     if(err) console.log(err);
-                    else console.log("Table deleted");
+                    //else console.log("Table deleted");
                     db.query(albumQuery, function(err, result){
                         if(err) throw err;
                         else {
-                            console.log("Album table created successfully");
+                            //console.log("Album table created successfully");
                             createSongTable()
                         }
                     });
                 });
             }
             else {
-                console.log("Album table created successfully");
+                //console.log("Album table created successfully");
                 createSongTable();
             }
         });
@@ -66,11 +67,11 @@ exports.initDatabase = function initDatabase(db, callback) {
                 dropTableQuery = "DROP TABLE songs";
                 db.query(dropTableQuery, function(err, result){
                     if(err) console.log(err);
-                    else console.log("Table deleted");
+                    //else console.log("Table deleted");
                     db.query(songQuery, function(err, result){
                         if(err) throw err;
                         else {
-                            console.log("Song table created successfully");
+                            //console.log("Song table created successfully");
                             fillTables()
                         }
                     });
@@ -84,7 +85,7 @@ exports.initDatabase = function initDatabase(db, callback) {
     }
 
     //Finds all songs that meet the filetype restrictions, and inserts
-    //Them into the database with one "INSERT INTO" op.
+    //them into the database with one "INSERT INTO" op.
     function fillTables(){
         artists = [];
         albums = []
@@ -111,14 +112,15 @@ exports.initDatabase = function initDatabase(db, callback) {
                         if(albumIsRecorded(artist, album) === false){
                             var tup = Object.freeze([artist, album]);
                             albums.push(tup);
-                            albumRecords.push([artistNumber, album, 0, ""]);
+                            albumArt = findArtwork(albumDir)
+                            albumRecords.push([artistNumber, album, 0, albumArt]);
                             artistRecords[artistNumber - 1][2] += 1;
                         }
                         fs.readdirSync(albumDir).forEach(title => {
                             if(fs.statSync(albumDir + title).isDirectory() == false){
                                 relDir = artist + '/' + album + '/' + title;
                                 albumNumber = (albums.indexOf(tup) + 1);
-                                fileTypes.forEach(type => {
+                                audioFileTypes.forEach(type => {
                                     if(title.indexOf(type) !== -1){
                                         title = title.split(type)[0];
                                         title = prettyTitle(title);
@@ -186,4 +188,29 @@ function prettyTitle(title) { //TODO: Fix this
     }
     });
     return title;
+  }
+
+  function findArtwork(dir) {
+      /*Accepts a filesystem absolute location, and returns the location of the
+        first supported image file, relative to the base dir. If none is found,
+        returns an empty string.
+        */
+        result = ''
+        var files = fs.readdirSync(dir)
+        scan:
+        for(var i = 0; i < files.length; i++){
+            var file = files[i]
+            for(var j=0; j <= artFileTypes.length; j++){
+                var type = artFileTypes[j]
+                if(file.indexOf(type) != -1) { //Artwork file found
+                    result = dir + file;
+
+                    //Strip the base dir, and leave only the relative dir
+                    result = result.replace(baseDir, '')
+                    break scan;
+                }
+            }
+        }
+        console.log(result)
+        return result;
   }

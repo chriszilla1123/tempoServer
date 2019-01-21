@@ -292,4 +292,15 @@ module.exports = function(tempoServer, db, baseDir) {
             res.send("true");
         };
     });
+
+    tempoServer.get('/test', (req, res) => {
+        var sizeOf = require('image-size')
+        imageLoc = '/home/chris/Storage/Music/Foreigner/Double Vision/Folder.jpg'
+        //var dimensions = sizeOf(imageLoc);
+        //console.log(dimensions.width, dimensions.height);
+        sizeOf(imageLoc, function (err, dimensions) {
+            var resp = dimensions.width.toString() + ', ' + dimensions.height.toString()
+            res.send(resp);
+          });
+    });
 }
