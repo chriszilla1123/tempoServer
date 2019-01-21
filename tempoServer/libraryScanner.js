@@ -165,6 +165,12 @@ exports.initDatabase = function initDatabase(db, callback) {
             };
             return false;
         };
+        //Write timestamp and call callback
+        var timestampLoc = "lastDatabaseUpdate";
+        var curTime = Date.now().toString();
+        fs.writeFile(timestampLoc, curTime, function(err) {
+            if(err) console.log(err)
+        });
         if(callback) callback();
     }
 }

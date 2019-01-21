@@ -18,10 +18,14 @@ module.exports = function(tempoServer, db, baseDir) {
         header_mp3 = "audio/mpeg";
         header_m4a = "audio/mpeg";
         header_flac = "audio/flac";
+        header_jpeg = "image/jpeg";
+        header_png = "image/png"
 
         if(fileType === ".mp3") return header_mp3;
         if(fileType === ".m4a") return header_m4a;
         if(fileType === ".flac") return header_flac;
+        if(fileType === ".jpeg" || fileType === ".jpg") return header_jpeg;
+        if(fileType === ".png") return header_png;
     }
     function compressSong(songId, songDir, songType, res){
         //Compresses a song, and returns a string of the new directory
@@ -282,6 +286,34 @@ module.exports = function(tempoServer, db, baseDir) {
         }
     });
 
+    tempoServer.get('/getAlbumArtById/:id', (req, res) => {
+        const id = req.params.id;
+        console.log("Requesting art for album id: " + id);
+        dbQuery = "SELECT albumArt FROM albums WHERE id=" + db.escape(id);
+        db.query(dbQuery, function(err, result){
+            console.log("results: ");
+            console.log(result);
+            if(err){
+                console.log(err)
+                res.send("");
+            }
+            else{
+                if(result[0].albumArt === ""){
+                    console.log("got here 1");
+                    res.send("");
+                }
+                else{
+                    console.log("got here 2");
+                    fileLoc = result[0].albumArt
+                    fileType = fileLoc.slice(fileLoc.indexOf("."));
+                    res.header("Content-Type", setTypeHeader(fileType));
+                    artStream = fs.createReadStream(baseDir + fileLoc)
+                    artStream.pipe(res);
+                }
+            }
+        });
+    })
+
     //Administrative endpoints
     tempoServer.get('/rescanLibrary', (req, res) => {
         console.log("Received Library Rescan Request");
@@ -293,14 +325,15 @@ module.exports = function(tempoServer, db, baseDir) {
         };
     });
 
-    tempoServer.get('/test', (req, res) => {
-        var sizeOf = require('image-size')
-        imageLoc = '/home/chris/Storage/Music/Foreigner/Double Vision/Folder.jpg'
-        //var dimensions = sizeOf(imageLoc);
-        //console.log(dimensions.width, dimensions.height);
-        sizeOf(imageLoc, function (err, dimensions) {
-            var resp = dimensions.width.toString() + ', ' + dimensions.height.toString()
-            res.send(resp);
-          });
+    tempoServer.get('/getLastUpdate', (req, res) => {
+        fs.readFile('lastDatabaseUpdate', (err, data) => {
+            if(err){
+                console.log(err)
+                res.send("0")
+            }
+            else{
+                res.send(data.toString());
+            }
+        })
     });
 }
