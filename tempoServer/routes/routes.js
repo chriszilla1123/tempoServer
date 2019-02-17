@@ -288,22 +288,18 @@ module.exports = function(tempoServer, db, baseDir) {
 
     tempoServer.get('/getAlbumArtById/:id', (req, res) => {
         const id = req.params.id;
-        console.log("Requesting art for album id: " + id);
+        //console.log("Requesting art for album id: " + id);
         dbQuery = "SELECT albumArt FROM albums WHERE id=" + db.escape(id);
         db.query(dbQuery, function(err, result){
-            console.log("results: ");
-            console.log(result);
             if(err){
                 console.log(err)
                 res.send("");
             }
             else{
                 if(result[0].albumArt === ""){
-                    console.log("got here 1");
                     res.send("");
                 }
                 else{
-                    console.log("got here 2");
                     fileLoc = result[0].albumArt
                     fileType = fileLoc.slice(fileLoc.indexOf("."));
                     res.header("Content-Type", setTypeHeader(fileType));

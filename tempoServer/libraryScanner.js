@@ -1,9 +1,10 @@
 const fs = require('fs');
+const path = require('path')
 
 var baseDir = "/home/chris/Storage/Music/";
 var audioFileTypes = [".mp3", ".m4a", ".flac"];
 var artFileTypes = [".jpg", ".jpeg", ".png"]
-var artistExceptions = ["tempo_minified"]
+var minified_folder = "tempo_minified"
 var albumExceptions = []
 var songExceptions = []
 
@@ -97,7 +98,7 @@ exports.initDatabase = function initDatabase(db, callback) {
         songQuery = "INSERT INTO songs (artist, album, title, fileType, directory) VALUES ?";
         
         fs.readdirSync(baseDir).forEach(artist => {
-            if(artistExceptions.includes(artist)) return;
+            if(minified_folder == artist) return;
             
             if(fs.statSync(baseDir + artist).isDirectory){
                 artistDir = baseDir + artist + '/';
@@ -171,6 +172,17 @@ exports.initDatabase = function initDatabase(db, callback) {
         fs.writeFile(timestampLoc, curTime, function(err) {
             if(err) console.log(err)
         });
+
+        //Clear the tempo_minified directory
+        var filesRemovedCounter = 0
+        var minDirLoc = baseDir + minified_folder
+        fs.readdirSync(minDirLoc).forEach(file => {
+            fs.unlink(path.join(minDirLoc, file), err => {
+                if(err) throw err
+            });
+            filesRemovedCounter++
+        });
+        console.log("Deleted " + filesRemovedCounter + " file(s) from " + minDirLoc);
         if(callback) callback();
     }
 }
@@ -217,6 +229,6 @@ function prettyTitle(title) { //TODO: Fix this
                 }
             }
         }
-        console.log(result)
+        //console.log(result)
         return result;
   }
