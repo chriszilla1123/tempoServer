@@ -88,7 +88,7 @@ module.exports = function(tempoServer, db, baseDir) {
         });
     });
     tempoServer.get('/getPlaylists', (req, res) => {
-        dbQuery = "SELECT * FROM playlists";
+        dbQuery = "SELECT * FROM playlists;";
         db.query(dbQuery, function(err, result) {
             if(err){
                 res.send(err);
@@ -99,7 +99,7 @@ module.exports = function(tempoServer, db, baseDir) {
         })
     })
     tempoServer.get('/getPlaylistSongs', (req, res) => {
-        dbQuery = "SELECT * FROM playlist_songs";
+        dbQuery = "SELECT * FROM playlist_songs;";
         db.query(dbQuery, function(err, result) {
             if(err) {
                 res.send(err)
