@@ -20,9 +20,9 @@ exports.initDatabase = function initDatabase(db, callback) {
         + "title VARCHAR(255), fileType VARCHAR(255), directory VARCHAR(255), "
         + "id int AUTO_INCREMENT, PRIMARY KEY (ID))";
     playlistQuery = "CREATE TABLE playlists (id int AUTO_INCREMENT, "
-        + "PRIMARY KEY (ID), playlist VARCHAR(255), picture VARCHAR(255))"
+        + "PRIMARY KEY (ID), playlist VARCHAR(255), playlistArt VARCHAR(255))"
     playlistSongQuery = "CREATE TABLE playlist_songs (playlist int, "
-        + "songID int, id int AUTO_INCREMENT, PRIMARY KEY(ID))"
+        + "songId int, id int AUTO_INCREMENT, PRIMARY KEY(ID))"
     db.query(artistQuery, function(err, result) {
         if(err){
             dropTableQuery = "DROP TABLE artists";
@@ -239,8 +239,8 @@ exports.initDatabase = function initDatabase(db, callback) {
         //Searches for .txt files containing playlist info.
         //playlist.txt has one song per line, the directory/filename of the song.
         var playlistDir = baseDir + playlist_folder;
-        playlistQuery = "INSERT INTO playlists (playlist, picture) VALUES ?";
-        playlistSongQuery = "INSERT INTO playlist_songs (playlist, songID) VALUES ?";
+        playlistQuery = "INSERT INTO playlists (playlist, playlistArt) VALUES ?";
+        playlistSongQuery = "INSERT INTO playlist_songs (playlist, songId) VALUES ?";
         var playlistRecords = [];
         var playlistSongRecords = [];
         var playlists = [];
