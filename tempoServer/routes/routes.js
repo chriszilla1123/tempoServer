@@ -52,8 +52,7 @@ module.exports = function(tempoServer, db, baseDir) {
         }
         
     }
-
-    //Song endpoints
+    //Database dump endpoints
     tempoServer.get('/getArtists', (req, res) => {
         dbQuery = "SELECT *  FROM artists"
         db.query(dbQuery, function(err, result) {
@@ -65,7 +64,6 @@ module.exports = function(tempoServer, db, baseDir) {
             }
         });
     });
-    
     tempoServer.get('/getAlbums', (req, res) => {
         dbQuery = "SELECT *  FROM albums"
         db.query(dbQuery, function(err, result) {
@@ -77,7 +75,7 @@ module.exports = function(tempoServer, db, baseDir) {
             }
         });
     });
-    
+
     tempoServer.get('/getSongs', (req, res) => {
         dbQuery = "SELECT * FROM songs";
         db.query(dbQuery, function(err, result) {
@@ -89,7 +87,31 @@ module.exports = function(tempoServer, db, baseDir) {
             }
         });
     });
+    tempoServer.get('/getPlaylists', (req, res) => {
+        dbQuery = "SELECT * FROM playlists";
+        db.query(dbQuery, function(err, result) {
+            if(err){
+                res.send(err);
+            }
+            else{
+                res.send(result);
+            }
+        })
+    })
+    tempoServer.get('/getPlaylistSongs', (req, res) => {
+        dbQuery = "SELECT * FROM playlist_songs";
+        db.query(dbQuery, function(err, result) {
+            if(err) {
+                res.send(err)
+            }
+            else{
+                res.send(result)
+            }
+        })
+    })
+    //End Database dump endpoints
     
+    //Song endpoints
     tempoServer.get('/getAlbumsByArtist/:id', (req, res) => {
         const id = req.params.id;
         dbQuery = "SELECT * FROM albums WHERE artist = " + db.escape(id);
