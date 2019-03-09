@@ -3,6 +3,7 @@ var cors = require('cors');
 var bodyParser = require('body-parser');
 const libraryScanner = require('../libraryScanner.js')
 const {spawn} = require('child_process');
+const playlistDir = "/tempo_playlists"
 
 module.exports = function(tempoServer, db, baseDir) {
     /*tempoServer.use(function(req, res, next) {
@@ -37,15 +38,16 @@ module.exports = function(tempoServer, db, baseDir) {
             fs.mkdirSync(min_folder)
         }
         if(fs.existsSync(minSong)){
-            res.header("Content-Type", setTypeHeader(".m4a"));
+            res.header("Content-Type", setTypeHeader(".mp3"));
             songStream = fs.createReadStream(minSong);
             songStream.pipe(res);
         }
         else{
-            bitrate = '96K'
+            bitrate = '96k'
             convert = spawn('ffmpeg', ['-i', largeSong, '-b:a', bitrate, minSong])
             convert.on('close', respCode => {
-                res.header("Content-Type", setTypeHeader(songType));
+                //console.log(respCode)
+                res.header("Content-Type", setTypeHeader(".mp3"));
                 songStream = fs.createReadStream(minSong);
                 songStream.pipe(res);
             })
@@ -342,6 +344,53 @@ module.exports = function(tempoServer, db, baseDir) {
             res.send("true");
         };
     });
+
+    //Update Playlist Info
+    tempoServer.get('/createPlaylist', (req, res) => {
+        if(req.query.playlistName){
+            playlistName = decodeURI(req.query.playlistName);
+            playlistFileLoc = baseDir + playlistDir + "/"
+                + playlistName + ".playlist";
+            try{
+                fs.writeFileSync(playlistFileLoc, "", {flag: 'wx'});
+                res.send(true)
+            }
+            catch(e){
+                res.send(false)
+            }
+        }
+        else{
+            res.send("No playlist name posted")
+        }
+    });
+
+    tempoServer.get('/addSongToPlaylist', (req, res) => {
+       if(req.query.playlistName && req.query.songDir){
+            var playlistName = req.query.playlistName;
+            var songDir = req.query.songDir;
+            playlistFileLoc = baseDir + playlistDir + "/"
+                + playlistName + ".playlist";
+            songDir += "\n"
+            try{
+                fs.writeFileSync(playlistFileLoc, songDir, {flag: "a"});
+                res.send(true)
+            }
+            catch(e){
+                res.send(false)
+            }
+       } 
+       else{
+           response = ""
+           if(!req.query.playlistID){
+               response += "[Missing Playlist Name]";
+           }
+           if(!req.query.songID){
+               response += "[Missing Song Dir]";
+           }
+           res.send(response);
+       }
+    });
+    //End Update Playlist Info
 
     tempoServer.get('/getLastUpdate', (req, res) => {
         fs.readFile('lastDatabaseUpdate', (err, data) => {
