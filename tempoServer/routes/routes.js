@@ -406,15 +406,64 @@ module.exports = function(tempoServer, db, baseDir) {
             }
        } 
        else{
-           response = ""
-           if(!req.query.playlistID){
+           response = "";
+           if(!req.query.playlistName){
                response += "[Missing Playlist Name]";
            }
-           if(!req.query.songID){
+           if(!req.query.songDir){
                response += "[Missing Song Dir]";
            }
            res.send(response);
        }
+    });
+    
+    tempoServer.get('/removeSongFromPlaylist', (req, res) => {
+        if(req.query.playlistName && req.query.songDir){
+            var playlistName = req.query.playlistName;
+            var songDir = req.query.songDir;
+            playlistFileLoc = baseDir + playlistDir + "/"
+                + playlistName + ".playlist";
+            newPlaylistFile = ""
+            removedLines = []
+            try{
+                var fileLines = fs.readFileSync(playlistFileLoc).toString().split("\n");
+                fileLines.forEach(function(line, lineIndex, lineArr) {
+                    //Add lines that don't match to the new file, excluding the lines
+                    //matching to remove the song.
+                    if(line.trim() != songDir.trim()){
+                        newPlaylistFile += (line.trim() + "\n");
+                    }else{
+                        removedLines.push(line.trim())
+                    }
+                });
+                //rewrite the file
+                fs.writeFileSync(playlistFileLoc, newPlaylistFile)
+                if(removedLines.length > 0){
+                    console.log("Removed " + removedLines.length + " songs from [" + playlistName + "]");
+                    removedLines.forEach(function(line, index, arr){
+                        console.log(line)
+                    });
+                    console.log("END REMOVED LINES");
+                    res.send(true);
+                }
+                else{ res.send(false); }
+            }
+            catch(e){
+                console.log("Error removing [" + songDir + "] from [" + playlistName + "]");
+                console.log(e)
+                res.send(false)
+            }
+        }
+        else{
+            response = "";
+            if(!req.query.playlistID){
+                response += "[Missing Playlist Name]";
+            }
+            if(!req.query.songDir){
+                response += "[Missing Song Dir]";
+            }
+            res.send(response)
+        }
     });
     //End Update Playlist Info
 
