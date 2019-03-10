@@ -6,9 +6,10 @@ var audioFileTypes = [".mp3", ".m4a", ".flac"];
 var artFileTypes = [".jpg", ".jpeg", ".png"]
 var minified_folder = "tempo_minified"
 var playlist_folder = "tempo_playlists"
+var ref = this
 
 //Regenerates the database, deletes the old table first.
-exports.initDatabase = function initDatabase(db, callback) {
+exports.scanLibrary = function scanLibrary(db, callback) {
     databaseName = "musicserver";
     artistQuery = "CREATE TABLE artists (id int AUTO_INCREMENT, "
         + "PRIMARY KEY (ID), artist VARCHAR(255), numSongs int, "
@@ -19,10 +20,6 @@ exports.initDatabase = function initDatabase(db, callback) {
     songQuery = "CREATE TABLE songs (artist int, album int, "
         + "title VARCHAR(255), fileType VARCHAR(255), directory VARCHAR(255), "
         + "id int AUTO_INCREMENT, PRIMARY KEY (ID))";
-    playlistQuery = "CREATE TABLE playlists (id int AUTO_INCREMENT, "
-        + "PRIMARY KEY (ID), playlist VARCHAR(255), playlistArt VARCHAR(255))"
-    playlistSongQuery = "CREATE TABLE playlist_songs (playlist int, "
-        + "songId int, id int AUTO_INCREMENT, PRIMARY KEY(ID))"
     db.query(artistQuery, function(err, result) {
         if(err){
             dropTableQuery = "DROP TABLE artists";
@@ -76,57 +73,13 @@ exports.initDatabase = function initDatabase(db, callback) {
                         if(err) throw err;
                         else {
                             //console.log("Song table created successfully");
-                            createPlaylistTable()
+                            fillTables()
                         }
                     });
                 });
             }
             else {
                 console.log("Song table created successfully");
-                createPlaylistTable();
-            }
-        });
-    }
-    function createPlaylistTable(){
-        db.query(playlistQuery, function(err, result) {
-            if(err){
-                dropTableQuery = "DROP TABLE playlists";
-                db.query(dropTableQuery, function(err, result){
-                    if(err) console.log(err)
-                    //else console.log("Table deleted")
-                    db.query(playlistQuery, function(err, result){
-                        if(err) throw err;
-                        else{
-                            console.log("Playlist table created successfully");
-                            createPlaylistSongTable()
-                        }
-                    });
-                });
-            }
-            else{
-                console.log("Playlist table created successfully");
-                createPlaylistSongTable()
-            }
-        });
-    }
-    function createPlaylistSongTable(){
-        db.query(playlistSongQuery, function(err, result) {
-            if(err){
-                dropTableQuery = "DROP TABLE playlist_songs";
-                db.query(dropTableQuery, function(err, result){
-                    if(err) console.log(err)
-                    //else console.log("Table deleted")
-                    db.query(playlistSongQuery, function(err, result){
-                        if(err) throw err;
-                        else{
-                            console.log("Playlist_songs table created successfully");
-                            fillTables()
-                        }
-                    });
-                });
-            }
-            else{
-                console.log("Playlist_songs table created successfully");
                 fillTables()
             }
         });
@@ -202,7 +155,7 @@ exports.initDatabase = function initDatabase(db, callback) {
             if(err) throw err;
             console.log("Inserted " + result.affectedRows + " songs into library");
             //Songs are inserted, scan for playlists now
-            scanPlaylists()
+            ref.scanPlaylists(db)
         });
         function artistIsRecorded(artist){
             for(var i=0; i < artistRecords.length; i++){
@@ -216,8 +169,9 @@ exports.initDatabase = function initDatabase(db, callback) {
             };
             return false;
         };
+
         //Write timestamp and call callback
-        var timestampLoc = "lastDatabaseUpdate";
+        var timestampLoc = "lastLibraryUpdate";
         var curTime = Date.now().toString();
         fs.writeFile(timestampLoc, curTime, function(err) {
             if(err) console.log(err)
@@ -232,86 +186,8 @@ exports.initDatabase = function initDatabase(db, callback) {
             });
             filesRemovedCounter++
         });
-
-    function scanPlaylists(){
-        //Call this after the songs table has been filled.
-        //Scans the tempo_playlists folder for any playlists
-        //Searches for .txt files containing playlist info.
-        //playlist.txt has one song per line, the directory/filename of the song.
-        var playlistDir = baseDir + playlist_folder;
-        playlistQuery = "INSERT INTO playlists (playlist, playlistArt) VALUES ?";
-        playlistSongQuery = "INSERT INTO playlist_songs (playlist, songId) VALUES ?";
-        var playlistRecords = [];
-        var playlistSongRecords = [];
-        var playlists = [];
-        var files = fs.readdirSync(playlistDir)
-        files.forEach(function(file, fileIndex, fileArr) {
-            var playlist = prettyTitle(file.split(".")[0]);
-            var extension = file.split(".")[1];
-            if(extension != "playlist") return;
-            var tup = Object.freeze([playlist]); //Maintains through db callback
-            playlists.push(tup);
-            playlistRecords.push([playlist, ""]);
-            var fileLines = fs.readFileSync(playlistDir + "/" + file).toString().split("\n");
-            fileLines.forEach(function(line, lineIndex, lineArr) {
-                var dbQuery = "SELECT * FROM songs WHERE directory = " + db.escape(line);
-                db.query(dbQuery, function(err, result){
-                    if(err) throw err;
-                    if(result[0] !== undefined){
-                        var songID = result[0].id;
-                        var playlistID =  (playlists.indexOf(tup) + 1);
-                        playlistSongRecords.push([playlistID, songID]);
-                    }
-                    //If reached last line in last file, insert the found playlists into the DB.
-                    if(fileIndex == fileArr.length - 1 && lineIndex == lineArr.length - 1){
-                        insertPlaylists();
-                    }
-                });
-            });
-        });
-        function insertPlaylists(){
-            console.log(playlistRecords);
-            console.log(playlistSongRecords);
-            db.query(playlistQuery, [playlistRecords], function(err, result){
-                if(result != undefined && result.affectedRows != undefined){
-                    console.log("Inserted " + result.affectedRows + " playlists into library");
-                }
-                else{
-                    console.log("Inserted 0 playlists into library");
-                }
-            });
-            db.query(playlistSongQuery, [playlistSongRecords], function(err, result){
-                if(result != undefined && result.affectedRows != undefined){
-                    console.log("Inserted " + result.affectedRows + " playlist_songs into library");
-                }
-                else{
-                    console.log("Inserted 0 playlist_songs into library");
-                }
-            });
-        }
-    }
+        if(callback) callback()
 }
-
-function prettyTitle(title) {
-    regexs = [
-      /\d\s\-\s/,
-      /\d\s\-/,
-      /\d\s/,
-      /\d\./,
-      /\-\s/
-      ]
-  
-    regexs.forEach(regex => {
-      if(title.indexOf(regex)) {
-      //console.log(title);
-      title = title.split(regex);
-      title = title[title.length - 1];
-      //console.log(title);
-      //console.log("----------");
-    }
-    });
-    return title;
-  }
 
   function findArtwork(dir) {
       /*Accepts a filesystem absolute location, and returns the location of the
@@ -338,3 +214,149 @@ function prettyTitle(title) {
         return result;
   }
 }
+
+exports.scanPlaylists = function scanPlaylists(db, callback) {
+    //Call this after the songs table has been filled.
+    //Scans the tempo_playlists folder for any playlists
+    //Searches for .txt files containing playlist info.
+    //playlist.txt has one song per line, the directory/filename of the song.
+    playlistQuery = "CREATE TABLE playlists (id int AUTO_INCREMENT, "
+        + "PRIMARY KEY (ID), playlist VARCHAR(255), playlistArt VARCHAR(255))";
+    playlistSongQuery = "CREATE TABLE playlist_songs (playlist int, "
+        + "songId int, id int AUTO_INCREMENT, PRIMARY KEY(ID))";
+    playlistInsertQuery = "INSERT INTO playlists (playlist, playlistArt) VALUES ?";
+    playlistSongInsertQuery = "INSERT INTO playlist_songs (playlist, songId) VALUES ?";
+    var playlistDir = baseDir + playlist_folder;
+    var playlistRecords = [];
+    var playlistSongRecords = [];
+    var playlists = [];
+    var files = fs.readdirSync(playlistDir)
+    createPlaylistTable()
+
+    function createPlaylistTable(){
+        db.query(playlistQuery, function(err, result) {
+            if(err){
+                dropTableQuery = "DROP TABLE playlists";
+                db.query(dropTableQuery, function(err, result){
+                    if(err) console.log(err)
+                    //else console.log("Table deleted")
+                    db.query(playlistQuery, function(err, result){
+                        if(err) throw err;
+                        else{
+                            console.log("Playlist table created successfully");
+                            createPlaylistSongTable()
+                        }
+                    });
+                });
+            }
+            else{
+                console.log("Playlist table created successfully");
+                createPlaylistSongTable()
+            }
+        });
+    }
+    function createPlaylistSongTable(){
+        db.query(playlistSongQuery, function(err, result) {
+            if(err){
+                dropTableQuery = "DROP TABLE playlist_songs";
+                db.query(dropTableQuery, function(err, result){
+                    if(err) console.log(err)
+                    //else console.log("Table deleted")
+                    db.query(playlistSongQuery, function(err, result){
+                        if(err) throw err;
+                        else{
+                            console.log("Playlist_songs table created successfully");
+                            scanAndInsert()
+                        }
+                    });
+                });
+            }
+            else{
+                console.log("Playlist_songs table created successfully");
+                scanAndInsert()
+            }
+        });
+    }
+
+    function scanAndInsert(){
+        files.forEach(function(file, fileIndex, fileArr) {
+            var playlist = prettyTitle(file.split(".")[0]);
+            var extension = file.split(".")[1];
+            if(extension != "playlist") return;
+            var tup = Object.freeze([playlist]); //Maintains through db callback
+            playlists.push(tup);
+            playlistRecords.push([playlist, ""]);
+            var fileLines = fs.readFileSync(playlistDir + "/" + file).toString().split("\n");
+            fileLines.forEach(function(line, lineIndex, lineArr) {
+                var dbQuery = "SELECT * FROM songs WHERE directory = " + db.escape(line);
+                db.query(dbQuery, function(err, result){
+                    if(err) throw err;
+                    if(result[0] !== undefined){
+                        var songID = result[0].id;
+                        var playlistID =  (playlists.indexOf(tup) + 1);
+                        playlistSongRecords.push([playlistID, songID]);
+                    }
+                    //If reached last line in last file, insert the found playlists into the DB.
+                    if(fileIndex == fileArr.length - 1 && lineIndex == lineArr.length - 1){
+                        insertPlaylists();
+                    }
+                });
+            });
+        });
+
+        function insertPlaylists(){
+            console.log(playlistRecords);
+            console.log(playlistSongRecords);
+            db.query(playlistInsertQuery, [playlistRecords], function(err, result){
+                if(result != undefined && result.affectedRows != undefined){
+                    console.log("Inserted " + result.affectedRows + " playlists into library");
+                }
+                else{
+                    console.log("Inserted 0 playlists into library");
+                }
+            });
+            db.query(playlistSongInsertQuery, [playlistSongRecords], function(err, result){
+                if(result != undefined && result.affectedRows != undefined){
+                    console.log("Inserted " + result.affectedRows + " playlist_songs into library");
+                    updateTimestamp()
+                }
+                else{
+                    console.log("Inserted 0 playlist_songs into library");
+                    updateTimestamp()
+                }
+            });
+        }
+    }
+
+    function updateTimestamp(){
+        //Write timestamp and call callback
+        var timestampLoc = "lastPlaylistUpdate";
+        var curTime = Date.now().toString();
+        fs.writeFile(timestampLoc, curTime, function(err) {
+            if(err) console.log(err)
+        });
+        if(callback) callback()
+    }
+}
+
+function prettyTitle(title) {
+    regexs = [
+      /\d\s\-\s/,
+      /\d\s\-/,
+      /\d\s/,
+      /\d\./,
+      /\-\s/
+      ]
+  
+    regexs.forEach(regex => {
+      if(title.indexOf(regex)) {
+      //console.log(title);
+      title = title.split(regex);
+      title = title[title.length - 1];
+      //console.log(title);
+      //console.log("----------");
+    }
+    });
+    return title;
+  }
+

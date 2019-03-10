@@ -33,7 +33,7 @@ db.connect(function(err) {
     require('./tempoServer/routes')(tempoServer, db, baseDir);
     
     if(shouldInitDatabase) {
-            libraryScanner.initDatabase(db)
+            libraryScanner.scanLibrary(db)
         }
     
     tempoServer.listen(port, () => {

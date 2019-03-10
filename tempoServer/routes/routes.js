@@ -337,12 +337,21 @@ module.exports = function(tempoServer, db, baseDir) {
     //Administrative endpoints
     tempoServer.get('/rescanLibrary', (req, res) => {
         console.log("Received Library Rescan Request");
-        libraryScanner.initDatabase(db, onSuccess);
+        libraryScanner.scanLibrary(db, onSuccess);
 
         function onSuccess(){
             console.log("Library rescan successful");
-            res.send("true");
+            res.send(true);
         };
+    });
+    tempoServer.get('/rescanPlaylists', (req, res) => {
+        console.log("Received Playlist Rescan Request");
+        libraryScanner.scanPlaylists(db, onSuccess);
+
+        function onSuccess(){
+            console.log("Playlist rescan successful");
+            res.send(true)
+        }
     });
 
     //Update Playlist Info
@@ -371,12 +380,29 @@ module.exports = function(tempoServer, db, baseDir) {
             playlistFileLoc = baseDir + playlistDir + "/"
                 + playlistName + ".playlist";
             songDir += "\n"
+            songExists = false
             try{
-                fs.writeFileSync(playlistFileLoc, songDir, {flag: "a"});
-                res.send(true)
+                var fileLines = fs.readFileSync(playlistFileLoc).toString().split("\n");
+                fileLines.forEach(function(line, lineIndex, lineArr) {
+                    if(line.trim() == songDir.trim()) songExists = true;
+                });
             }
             catch(e){
-                res.send(false)
+                console.log(e);
+            }
+            if(!songExists){
+                try{
+                    fs.writeFileSync(playlistFileLoc, songDir, {flag: "a"});
+                    res.send(true);
+                    console.log("Added " + songDir.trim() + " to " + playlistName.trim());
+                }
+                catch(e){
+                    res.send(false);
+                }
+            }
+            else{
+                res.send(false);
+                console.log(songDir.trim() + " is already in " + playlistName.trim());
             }
        } 
        else{
@@ -392,11 +418,23 @@ module.exports = function(tempoServer, db, baseDir) {
     });
     //End Update Playlist Info
 
-    tempoServer.get('/getLastUpdate', (req, res) => {
-        fs.readFile('lastDatabaseUpdate', (err, data) => {
+    tempoServer.get('/getLastLibraryUpdate', (req, res) => {
+        fs.readFile('lastLibraryUpdate', (err, data) => {
             if(err){
                 console.log(err)
-                res.send("0")
+                res.send("0") //Must need update
+            }
+            else{
+                res.send(data.toString());
+            }
+        })
+    });
+
+    tempoServer.get('/getLastPlaylistUpdate', (req, res) => {
+        fs.readFile('lastPlaylistUpdate', (err, data) => {
+            if(err){
+                console.log(err)
+                res.send("0") //Must need update
             }
             else{
                 res.send(data.toString());
