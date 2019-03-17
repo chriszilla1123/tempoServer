@@ -335,6 +335,9 @@ module.exports = function(tempoServer, db, baseDir) {
     })
 
     //Administrative endpoints
+    tempoServer.get('/ping', (req, res) => {
+        res.send('pong');
+    })
     tempoServer.get('/rescanLibrary', (req, res) => {
         console.log("Received Library Rescan Request");
         libraryScanner.scanLibrary(db, onSuccess);
@@ -446,7 +449,10 @@ module.exports = function(tempoServer, db, baseDir) {
                     console.log("END REMOVED LINES");
                     res.send(true);
                 }
-                else{ res.send(false); }
+                else{ 
+                    res.send(false); 
+                    console.log("[" + songDir + "] not found in [" + playlistName + "], failed to remove");
+                }
             }
             catch(e){
                 console.log("Error removing [" + songDir + "] from [" + playlistName + "]");
