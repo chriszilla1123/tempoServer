@@ -38,7 +38,7 @@ function getBaseDir(){
     }
     else{
         fs.appendFile(fileName, "", (err) => {
-        
+
         });
         console.log("ERROR: Please enter a base directory location in basedir.txt. Quitting.");
         process.exit(1);
