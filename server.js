@@ -1,42 +1,40 @@
 #!/usr/bin/env node
 
 const express = require('express');
-const mysql = require('mysql');
 const bodyParser = require('body-parser');
-const lineReader = require('readline');
 const fs = require('fs');
+const libraryScanner = require('./tempoServer/libraryScanner.js');
+const sqlite = require('sqlite3');
 const tempoServer = express();
-const libraryScanner = require('./tempoServer/libraryScanner.js')
 
 //Get database password
-passwordLoc = '/etc/passwords/tempoServerPass';
-password = fs.readFileSync(passwordLoc).toString().split('\n')[0];
+databaseName = "tempoServer";
 
 //Server options
 const port = 8000;
 tempoServer.use(bodyParser.urlencoded({extended: true}));
-var baseDir = "/home/chris/Storage/Music/";
-shouldInitDatabase = false;
+let baseDir = "/home/chris/Storage/Music/";
+let shouldInitDatabase = false;
 
-//Database connection object
-var db = mysql.createConnection({
-    host: "localhost",
-    user: "musicserver",
-    password: password,
-    database: "musicserver"
-});
-
-//Establish database connection
-db.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected to database!');
-    require('./tempoServer/routes')(tempoServer, db, baseDir);
-    
-    if(shouldInitDatabase) {
-            libraryScanner.scanLibrary(db)
+dbFile = './data.db';
+let db = new sqlite.Database(dbFile, (err) => {
+    if(err) {
+        console.log("Error connecting to database");
+    }
+    else{
+        console.log("Connected to database successfully");
+        require('./tempoServer/routes')(tempoServer, db, baseDir)
+        if(fs.statSync(dbFile).size < 4){
+            shouldInitDatabase = true
         }
-    
-    tempoServer.listen(port, () => {
-        console.log("Listening on port: " + port);
-    });
+
+        if(shouldInitDatabase){
+            libraryScanner.scanLibrary(db);
+        }
+
+        tempoServer.listen(port, () => {
+            console.log("Listening on port: " + port);
+        });
+    }
+
 });

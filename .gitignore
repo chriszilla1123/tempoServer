@@ -1,2 +1,4 @@
 node_modules/
 .gitignore.swp
+data.db
+basedir.txt
