@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-let baseDir = getBaseDir()
+let baseDir = getBaseDir();
+console.log("Using baseDir: " + baseDir);
 const audioFileTypes = [".mp3", ".m4a", ".flac"];
 const artFileTypes = [".jpg", ".jpeg", ".png"];
 const minified_folder = "tempo_minified";
@@ -14,33 +15,21 @@ function getBaseDir(){
     let lines = "";
 
     if(fs.existsSync(fileName)){
-        const readInterface = readline.createInterface({
-            input: fs.createReadStream(fileName),
-            output: lines,
-            console: false
-        });
-        if(fs.statSync(fileName).size <= 1){
-            console.log("ERROR: Please enter a valid base directory in basedir.txt. Quitting.");
+        let dir = fs.readFileSync(fileName, 'utf8').toString().trim();
+        if(dir.length <= 1){
+            console.log("ERROR: getBaseDir 1: Please enter a valid base directory in basedir.txt. Quitting...");
             process.exit(1);
         }
-        readInterface.on('line', function(line){
-            if(line.length === 0 || !fs.existsSync(line)){
-                console.log("ERROR: Please enter a valid base directory in basedir.txt. Quitting.");
-                process.exit(1);
-            }
-            if(!line.endsWith('/')){
-                line = line + '/';
-            }
-
-            console.log("Using basedir: " + line);
-            return line
-        });
+        if(! dir.endsWith('/')){
+            dir = dir + '/';
+        }
+        return dir;
     }
     else{
         fs.appendFile(fileName, "", (err) => {
 
         });
-        console.log("ERROR: Please enter a base directory location in basedir.txt. Quitting.");
+        console.log("ERROR: getBaseDir 2 Please enter a base directory location in basedir.txt. Quitting.");
         process.exit(1);
     }
 }
